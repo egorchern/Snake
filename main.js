@@ -1,15 +1,18 @@
 "use strict";
 
-let canvas, frame_interval, frame_timer;
+let canvas, frame_interval, frame_timer, move_interval, move_timer;
 let ctx;
+frame_interval = 16.6;
 let game_object, field;
 let snake_block_color = "hsl(223, 78%, 59%)";
+let block_offset = 0.6;
 let opposites = {
     "right" : "left",
     "left" : "right",
     "up" : "down",
     "down" : "up"
 };
+let eye_radius, vertical_component, horizontal_component;
 function shift_array_right_by(arr, amount){
     let new_arr = [];
     for (let i = 0; i < arr.length; i += 1){
@@ -92,9 +95,10 @@ class top_info_menu {
 
 class snake {
     constructor(start_x, start_y) {
-        this.body = [new snake_block(start_x, start_y), new snake_block(start_x - 1, start_y), new snake_block(start_x - 2, start_y), new snake_block(start_x - 3, start_y), new snake_block(start_x - 4, start_y)];
-        this.directions = ["right", "right", "right", "right", "right"];
+        this.body = [new snake_block(start_x, start_y), new snake_block(start_x - 1, start_y), new snake_block(start_x - 2, start_y), new snake_block(start_x - 3, start_y), new snake_block(start_x - 4, start_y),  new snake_block(start_x - 5, start_y)];
+        this.directions = ["right", "right", "right", "right", "right", "right"];
         this.head_direction = "right";
+        
         this.change_direction = function(direction){
             let opposite = opposites[this.head_direction];
             if(opposite != direction){
@@ -114,9 +118,10 @@ class snake {
             }
         }
         this.draw = function(){
-            this.body.forEach(block => {
-                block.draw();
-            })
+            this.body[0].draw(this.directions[0], true);
+            for(let i = 1; i < this.body.length; i += 1){
+                this.body[i].draw(this.directions[i]);
+            }
         }
     }
 }
@@ -128,6 +133,7 @@ class snake_block {
         this.bottom = this.top + field.block_height;
         this.left = block_x * field.block_width;
         this.right = this.left + field.block_width;
+        
         this.move = function(direction){
             switch(direction){
                 case "up":
@@ -149,11 +155,46 @@ class snake_block {
             }
         }
        
-        this.draw = function(){
+        this.draw = function(direction, head = false){
+            
             ctx.save();
             ctx.fillStyle = snake_block_color;
-            ctx.fillRect(this.left, this.top, field.block_width, field.block_height);
+            ctx.fillRect(this.left + block_offset, this.top + block_offset, field.block_width - block_offset * 2, field.block_height- block_offset * 2);
             ctx.restore();
+
+            if(head === true){
+                if(direction === "up" || direction === "down"){
+                    let vertical_center = this.top + vertical_component;
+                    let left_eye_x = this.left + Math.round((1/4 * field.block_width));
+                    let right_eye_x = this.right - Math.round((1/4 * field.block_width));
+                    
+                    ctx.save();
+                    ctx.fillStyle = "hsl(60, 100%, 50%)";
+                    ctx.beginPath();
+                    ctx.arc(left_eye_x, vertical_center, eye_radius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(right_eye_x, vertical_center, eye_radius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                else{
+                    let horizontal_center = this.left + horizontal_component;
+                    let left_eye_y = this.top + Math.round((1/4 * field.block_height));
+                    let right_eye_y = this.bottom - Math.round((1/4 * field.block_height));
+                    
+                    ctx.save();
+                    ctx.fillStyle = "hsl(60, 100%, 50%)";
+                    ctx.beginPath();
+                    ctx.arc(horizontal_center, left_eye_y, eye_radius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(horizontal_center,right_eye_y, eye_radius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+            
         }
     }
 }
@@ -177,11 +218,18 @@ function bind_input(){
         field.snake.change_direction(direction);
     })
 }
+
 // process_frame has to be in a global scope, otherwise it does not work
 function process_frame(){
-    field.snake.move_in_direction();
+    
     field.draw();
 }
+
+
+function move_snake(){
+    field.snake.move_in_direction();
+}
+
 
 // initializes everything, such as game_object and frame timer
 function init(difficulty) {
@@ -189,25 +237,29 @@ function init(difficulty) {
     ctx = canvas.getContext("2d");
     
     
-    // easy = 300; medium = 200; hard = 150;
+    // easy = 200; medium = 175; hard = 120;
     switch (difficulty) {
         case "easy":
-            frame_interval = 300;
+            move_interval = 200;
             break;
         case "medium":
-            frame_interval = 200;
+            move_interval = 175;
             break;
         case "hard":
-            frame_interval = 150;
+            move_interval = 120;
             break;
         default:
-            frame_interval = 200;
+            move_interval = 175;
             break;
     }
     
     field = new game_field(15, 15);
     field.initialize();
+    eye_radius = Math.round((1/8 * field.block_width));
+    vertical_component = Math.round(field.block_height / 2);
+    horizontal_component = Math.round(field.block_width / 2);
     frame_timer = setInterval(process_frame, frame_interval);
+    move_interval = setInterval(move_snake, move_interval);
 }
 
 // event listener to call init() function
