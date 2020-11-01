@@ -5,13 +5,14 @@ let ctx;
 frame_interval = 16.6;
 let game_object, field;
 let snake_block_color = "hsl(223, 78%, 59%)";
-let block_offset = 0.6;
+let block_offset = 0.4;
 let opposites = {
     "right" : "left",
     "left" : "right",
     "up" : "down",
     "down" : "up"
 };
+let frame_counter = 0;
 let eye_radius, vertical_component, horizontal_component;
 function shift_array_right_by(arr, amount){
     let new_arr = [];
@@ -95,9 +96,30 @@ class top_info_menu {
 
 class snake {
     constructor(start_x, start_y) {
-        this.body = [new snake_block(start_x, start_y), new snake_block(start_x - 1, start_y), new snake_block(start_x - 2, start_y), new snake_block(start_x - 3, start_y), new snake_block(start_x - 4, start_y),  new snake_block(start_x - 5, start_y)];
-        this.directions = ["right", "right", "right", "right", "right", "right"];
+        this.body = [new snake_block(start_x, start_y)];
+        this.directions = ["right"];
         this.head_direction = "right";
+        
+        this.grow_snake = function(){
+            let x, y;
+            let last_part = this.body[this.body.length - 1];
+            let last_direction = this.directions[this.directions.length - 1];
+            x = Math.round(last_part.left / field.block_width);
+            y = Math.round(last_part.top / field.block_height);
+            if(last_direction === "left"){
+                this.body.push(new snake_block(x + 1, y));
+            }
+            else if(last_direction === "right"){
+                this.body.push(new snake_block(x - 1, y));
+            }
+            else if(last_direction === "up"){
+                this.body.push(new snake_block(x, y + 1));
+            }
+            else{
+                this.body.push(new snake_block(x, y - 1));
+            }
+            this.directions.push(last_direction);
+        }
         
         this.change_direction = function(direction){
             let opposite = opposites[this.head_direction];
@@ -223,6 +245,7 @@ function bind_input(){
 function process_frame(){
     
     field.draw();
+
 }
 
 
@@ -260,6 +283,7 @@ function init(difficulty) {
     horizontal_component = Math.round(field.block_width / 2);
     frame_timer = setInterval(process_frame, frame_interval);
     move_interval = setInterval(move_snake, move_interval);
+    
 }
 
 // event listener to call init() function
