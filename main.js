@@ -43,11 +43,45 @@ class game_field {
     constructor(size_x, size_y) {
         this.size_x = size_x;
         this.size_y = size_y;
+        
         this.block_width = Math.floor(canvas.width / size_x);
         this.block_height = Math.floor(canvas.height / size_y);
+        
         this.occupied_squares = [];
         this.fruit_position = [];
-        
+        this.snake_collides_with_itself = function(){
+            let head_coordinates = this.occupied_squares[0];
+            for(let i = 1; i < this.occupied_squares.length; i += 1){
+                let part_coordinates = this.occupied_squares[i];
+                if(head_coordinates[0] === part_coordinates[0] && head_coordinates[1] === part_coordinates[1]){
+                    return true;
+                }
+            }
+            return false;
+        }
+        this.snake_collides_with_fruit = function(){
+            if(this.occupied_squares[0][0] === this.fruit_position[0] && this.occupied_squares[0][1] === this.fruit_position[1]){
+                return true;
+            }
+            else{
+                return false;
+            }
+        }
+
+        this.snake_out_of_bounds = function(){
+            
+            let current_block = this.occupied_squares[0];
+            if(current_block[0] < 0 || current_block[0] >= this.size_x || current_block[1] < 0 || current_block[1] >= this.size_y){
+                return true;
+            }
+            else{
+                return false;
+            }
+        }
+        this.stop_game = function(){
+            clearInterval(move_timer);
+            clearInterval(frame_timer);
+        }
         this.update_occupied_squares = function () {
             let occupied_squares = [];
             for (let i = 0; i < this.snake.body.length; i += 1) {
@@ -162,14 +196,7 @@ class snake {
         this.body = [new snake_block(start_x, start_y)];
         this.directions = ["right"];
         this.head_direction = "right";
-        this.snake_collides_with_fruit = function(){
-            if(field.occupied_squares[0][0] === field.fruit_position[0] && field.occupied_squares[0][1] === field.fruit_position[1]){
-                return true;
-            }
-            else{
-                return false;
-            }
-        }
+        
         this.grow_snake = function () {
             let x, y;
             let last_part = this.body[this.body.length - 1];
@@ -206,11 +233,17 @@ class snake {
                 this.body[i].move(this.directions[i]);
             }
             field.update_occupied_squares();
-            let collides_with_fruit = this.snake_collides_with_fruit();
+            let collides_with_fruit = field.snake_collides_with_fruit();
             if(collides_with_fruit === true){
                 field.generate_fruit_position();
                 this.grow_snake();
             }
+            let out_of_bounds = field.snake_out_of_bounds();
+            let snake_collided = field.snake_collides_with_itself();
+            if(out_of_bounds === true || snake_collided === true){
+                field.stop_game();
+            }
+
         }
         this.draw = function () {
             this.body[0].draw(this.directions[0], true);
@@ -329,19 +362,19 @@ function init(difficulty) {
     ctx = canvas.getContext("2d");
 
 
-    // easy = 200; medium = 175; hard = 120;
+    // easy = 225; medium = 195; hard = 175;
     switch (difficulty) {
         case "easy":
-            move_interval = 200;
+            move_interval = 225;
             break;
         case "medium":
-            move_interval = 175;
+            move_interval = 195;
             break;
         case "hard":
-            move_interval = 120;
+            move_interval = 175;
             break;
         default:
-            move_interval = 175;
+            move_interval = 195;
             break;
     }
 
