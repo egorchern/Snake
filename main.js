@@ -1,8 +1,7 @@
 "use strict";
 
-let canvas, frame_interval, frame_timer, move_interval, move_timer;
+let canvas, frame_interval, move_interval, move_timer;
 let ctx;
-frame_interval = 16.6;
 let game_object, field;
 let snake_block_color = "hsl(223, 78%, 59%)";
 let block_offset = 0.4;
@@ -80,7 +79,7 @@ class game_field {
         }
         this.stop_game = function(){
             clearInterval(move_timer);
-            clearInterval(frame_timer);
+            console.log("game over");
         }
         this.update_occupied_squares = function () {
             let occupied_squares = [];
@@ -343,16 +342,13 @@ function bind_input() {
     })
 }
 
-// process_frame has to be in a global scope, otherwise it does not work
-function process_frame() {
-
-    field.draw();
-
-}
 
 
+
+//move in direction and draw 
 function move_snake() {
     field.snake.move_in_direction();
+    field.draw();
 }
 
 
@@ -383,8 +379,8 @@ function init(difficulty) {
     eye_radius = Math.round((1 / 8 * field.block_width));
     vertical_component = Math.round(field.block_height / 2);
     horizontal_component = Math.round(field.block_width / 2);
-    frame_timer = setInterval(process_frame, frame_interval);
-    move_interval = setInterval(move_snake, move_interval);
+    
+    move_timer = setInterval(move_snake, move_interval);
     field.generate_fruit_position();
 }
 
