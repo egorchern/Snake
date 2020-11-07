@@ -2,7 +2,7 @@
 
 let canvas, frame_interval, move_interval, move_timer;
 let ctx;
-let game_object, field;
+let field;
 let snake_block_color = "hsl(223, 78%, 59%)";
 let block_offset = 0.4;
 let opposites = {
@@ -13,7 +13,7 @@ let opposites = {
 };
 let frame_counter = 0;
 let eye_radius, vertical_component, horizontal_component;
-
+let seconds_timer, seconds_elapsed;
 function shift_array_right_by(arr, amount) {
     let new_arr = [];
     for (let i = 0; i < arr.length; i += 1) {
@@ -37,7 +37,51 @@ function get_random_int(min, max) {
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-
+function update_fruit_count(count){
+    document.querySelector("#fruit_count").innerHTML = String(count);
+}
+function update_timer(count){
+    document.querySelector("#timer").innerHTML = String(count);
+}
+function bind_restart(){
+    document.onkeydown = function(ev){
+        
+        let key = ev.key;
+        console.log(key);
+        if(key === "r"){
+            init();
+        }
+    };
+    
+}
+function unbind_restart(){
+    document.onkeydown = null;
+}
+function handle_game_end(){
+    let fruit_count = field.fruit_count;
+    document.querySelector("#top_panel").classList = "";
+    document.querySelector("#top_panel").innerHTML = "";
+    document.querySelector("#top_panel").innerHTML = `
+    <p style="text-align:center; font-size: 24px">Your score is: ${fruit_count}</p>
+    <p style="text-align:center; font-size: 24px">Time elapsed: ${seconds_elapsed} seconds</p>
+    <p style="text-align:center; font-size: 24px">Press R to restart</p>
+    `;
+    unbind_input();
+    bind_restart();
+}
+function add_start_game_top_panel(){
+    document.querySelector("#top_panel").classList += "stats_container";
+    document.querySelector("#top_panel").innerHTML = `
+    <div class="img_container">
+                <img src="fruit.PNG">
+            </div>
+            <div class="img_container">
+                <img src="time.PNG">
+            </div>
+            <p style="text-align:center; font-size: 28px;" id="fruit_count">0</p>
+            <p style="text-align:center; font-size: 28px;" id="timer" >0</p>
+    `;
+}
 class game_field {
     constructor(size_x, size_y) {
         this.size_x = size_x;
@@ -48,6 +92,7 @@ class game_field {
         
         this.occupied_squares = [];
         this.fruit_position = [];
+        this.fruit_count = 0;
         this.snake_collides_with_itself = function(){
             let head_coordinates = this.occupied_squares[0];
             for(let i = 1; i < this.occupied_squares.length; i += 1){
@@ -79,7 +124,8 @@ class game_field {
         }
         this.stop_game = function(){
             clearInterval(move_timer);
-            console.log("game over");
+            clearInterval(seconds_timer);
+            handle_game_end();
         }
         this.update_occupied_squares = function () {
             let occupied_squares = [];
@@ -128,6 +174,21 @@ class game_field {
             ctx.moveTo(x_center, y_center - radius);
             ctx.lineTo(x_center + 3, y_center - radius - stick_length);
             ctx.stroke();
+        }
+        this.after_snake_moved = function(){
+            this.update_occupied_squares();
+            let collides_with_fruit = this.snake_collides_with_fruit();
+            if(collides_with_fruit === true){
+                this.generate_fruit_position();
+                this.snake.grow_snake();
+                this.fruit_count += 1;
+                update_fruit_count(this.fruit_count);
+            }
+            let out_of_bounds = this.snake_out_of_bounds();
+            let snake_collided = this.snake_collides_with_itself();
+            if(out_of_bounds === true || snake_collided === true){
+                this.stop_game();
+            }
         }
         this.draw = function () {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -231,17 +292,7 @@ class snake {
             for (let i = 0; i < this.body.length; i += 1) {
                 this.body[i].move(this.directions[i]);
             }
-            field.update_occupied_squares();
-            let collides_with_fruit = field.snake_collides_with_fruit();
-            if(collides_with_fruit === true){
-                field.generate_fruit_position();
-                this.grow_snake();
-            }
-            let out_of_bounds = field.snake_out_of_bounds();
-            let snake_collided = field.snake_collides_with_itself();
-            if(out_of_bounds === true || snake_collided === true){
-                field.stop_game();
-            }
+            field.after_snake_moved();
 
         }
         this.draw = function () {
@@ -326,22 +377,30 @@ class snake_block {
 }
 
 function bind_input() {
-    document.addEventListener("keydown", function (ev) {
+    document.onkeydown =  function(ev){
         let key = ev.key;
+        console.log(key);
         let direction;
         if (key === "a") {
             direction = "left";
+            field.snake.change_direction(direction);
         } else if (key === "w") {
             direction = "up";
+            field.snake.change_direction(direction);
         } else if (key === "d") {
             direction = "right";
+            field.snake.change_direction(direction);
         } else if (key === "s") {
             direction = "down";
+            field.snake.change_direction(direction);
         }
-        field.snake.change_direction(direction);
-    })
+        
+    };
+    
 }
-
+function unbind_input(){
+    document.onkeydown = null;
+}
 
 
 
@@ -354,10 +413,11 @@ function move_snake() {
 
 // initializes everything, such as game_object and frame timer
 function init(difficulty) {
+    unbind_restart();
     canvas = document.querySelector("#main_canvas");
     ctx = canvas.getContext("2d");
-
-
+    seconds_elapsed = 0;
+    
     // easy = 225; medium = 195; hard = 175;
     switch (difficulty) {
         case "easy":
@@ -382,6 +442,11 @@ function init(difficulty) {
     
     move_timer = setInterval(move_snake, move_interval);
     field.generate_fruit_position();
+    seconds_timer = setInterval(function(){
+        seconds_elapsed += 1;
+        update_timer(seconds_elapsed);
+    }, 1000);
+    add_start_game_top_panel();
 }
 
 // event listener to call init() function
