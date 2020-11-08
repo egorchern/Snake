@@ -43,6 +43,7 @@ function update_fruit_count(count){
 function update_timer(count){
     document.querySelector("#timer").innerHTML = String(count);
 }
+//bind key r to restart the game
 function bind_restart(){
     document.onkeydown = function(ev){
         
