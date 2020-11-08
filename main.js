@@ -77,7 +77,7 @@ function add_start_game_top_panel(){
                 <img src="fruit.PNG">
             </div>
             <div class="img_container">
-                <img src="time.PNG">
+                <img src="time.png">
             </div>
             <p style="text-align:center; font-size: 28px;" id="fruit_count">0</p>
             <p style="text-align:center; font-size: 28px;" id="timer" >0</p>
